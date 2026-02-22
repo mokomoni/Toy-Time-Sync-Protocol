@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Toy Time Sync Protocol - Sync Lab</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        
+        body {
+            background-color: #0f172a;
+            background-size: cover;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; color: white;
+        }
+
+        .glass-card {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(15px);
+            padding: 35px; border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 450px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+        h2 { font-weight: 300; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 25px; }
+
+        .display-area {
+            display: flex; justify-content: space-around;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px; border-radius: 15px; margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .stat-box span { display: block; font-size: 0.7rem; opacity: 0.6; margin-bottom: 5px; }
+        .stat-box b { font-size: 1.6rem; color: #00e5ff; }
+
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+
+        button {
+            flex: 1; padding: 14px; border: none; border-radius: 10px;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+
+        .sync-btn { background: #fff; color: #000; }
+        .log-btn { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        button:hover { transform: translateY(-3px); opacity: 0.9; }
+
+        #log-container {
+            display: none; 
+            max-height: 180px; overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4); border-radius: 12px;
+            padding: 10px; text-align: left;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { border-bottom: 1px solid rgba(255,255,255,0.2); padding: 10px; }
+        td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body>
+
+<div class="glass-card">
+    <h2>Network Sync</h2>
+    
+    <div class="display-area">
+        <div class="stat-box">
+            <span>Latency (RTT)</span>
+            <b id="rtt-val">--</b>
+        </div>
+        <div class="stat-box">
+            <span>Clock Offset</span>
+            <b id="offset-val">--</b>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="sync-btn" onclick="startSimulatedSync()">Request Sync</button>
+        <button class="log-btn" onclick="toggleLogs()">View Logs</button>
+    </div>
+
+    <div id="log-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Req ID</th>
+                    <th>RTT</th>
+                    <th>Offset</th>
+                </tr>
+            </thead>
+            <tbody id="log-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let logHistory = [];
+     let count = 0;
+
+
+     
+    function startSimulatedSync() {
+        // T1: Client Sends Request
+        const t1 = Date.now();
+         // Simulate variable travel time for the packet of information to move throuhgh the network
+         // Varies from 40ms to 100 ms
+        
+        const travelTime = 40 + Math.floor(Math.random() * 60);
+
+        setTimeout(() => {
+            // T2: Server Timestamp
+            // Server drift ; difference between the times of the local clock and the server clock
+
+            const serverDrift = 500;
+            const t2 = t1 + serverDrift + (travelTime / 2);
+             // Server is assumed to reply instantly so t2 and t3 are equal
+            // T4: Client Receives Response
+            const t4 = t1 + travelTime;
+
+            
+            // Round Trip Time: total time the packet took to move through the network
+            const rtt = t4 - t1;
+
+            // Offset: ( (T2 - T1) + (T2 - T4) ) / 2
+            const offset = Math.floor(((t2 - t1) + (t2 - t4)) / 2);
+
+            updateUI(rtt, offset);
+        }, travelTime / 2);
+    }
+
+    function updateUI(rtt, offset) {
+        count++;
+        document.getElementById('rtt-val').innerText = rtt + "ms";
+        document.getElementById('offset-val').innerText = offset + "ms";
+
+        const tbody = document.getElementById('log-body');
+        const row = `<tr>
+            <td>#${count}</td>
+            <td>${rtt}ms</td>
+            <td>${offset}ms</td>
+        </tr>`;
+        
+        // Add new log to the top
+        tbody.insertAdjacentHTML('afterbegin', row);
+    }
+    // To display logs when the log button is clicked
+    function toggleLogs() {
+        const container = document.getElementById('log-container');
+        container.style.display = (container.style.display === 'block') ? 'none' : 'block';
+    }
+</script>
+
+</body>
+</html>
